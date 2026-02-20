@@ -4,3 +4,4 @@ dist
 /gemini
 .env.local
 .env.*.local
+/.pnpm-store
