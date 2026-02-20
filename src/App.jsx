@@ -368,29 +368,6 @@ export default function App() {
     void saveCompletedRun();
   }, [saveCompletedRun, submissionState.status]);
 
-  const handleCheatComplete = useCallback(() => {
-    if (gameState.status !== 'PLAYING' && gameState.status !== 'COMPLETED') {
-      return;
-    }
-
-    if (!activeRunMeta) {
-      return;
-    }
-
-    const finalLevel = LEVELS.length;
-    const finalLevelConfig = getLevelConfig(finalLevel);
-    const totalPieces = finalLevelConfig.rows * finalLevelConfig.cols;
-
-    setEffectKey((value) => value + 1);
-    setSubmissionState(createSubmissionState());
-    setGameState({
-      currentLevel: finalLevel,
-      status: 'FINISHED'
-    });
-    setProgress({ snapped: totalPieces, total: totalPieces });
-    setRunKey((value) => value + 1);
-  }, [activeRunMeta, gameState.status]);
-
   const showPuzzle =
     gameState.status === 'PLAYING' || gameState.status === 'COMPLETED' || gameState.status === 'FINISHED';
   const isAdminPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
@@ -533,7 +510,6 @@ export default function App() {
               onReplayLevel={handleReplayLevel}
               onRestartAll={handleRestartAll}
               onRetrySubmit={handleRetrySave}
-              onCheatComplete={handleCheatComplete}
               themeLabel="TOP PICK"
             />
           </section>

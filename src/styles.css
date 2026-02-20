@@ -236,11 +236,6 @@ button {
   box-shadow: 4px 4px 0 var(--nb-hot-pink);
 }
 
-.hud-button-cheat {
-  background: var(--nb-cyan);
-  box-shadow: 4px 4px 0 var(--nb-black);
-}
-
 .hud-button:hover,
 .cta-button:hover,
 .ghost-button:hover {
