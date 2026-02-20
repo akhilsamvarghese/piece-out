@@ -282,6 +282,58 @@ button {
   letter-spacing: 0.02em;
 }
 
+.identity-form {
+  margin-top: 0.72rem;
+  display: grid;
+  gap: 0.44rem;
+}
+
+.identity-field {
+  display: grid;
+  gap: 0.24rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.identity-input {
+  width: 100%;
+  border: 3px solid var(--nb-black);
+  border-radius: 8px;
+  padding: 0.6rem 0.66rem;
+  font-family: 'Space Grotesk', 'Trebuchet MS', sans-serif;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--nb-black);
+  background: #fff;
+}
+
+.identity-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(36, 207, 239, 0.42);
+}
+
+.identity-select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--nb-black) 50%),
+    linear-gradient(135deg, var(--nb-black) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+.field-error {
+  margin: 0;
+  color: #ad0338;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+
 .modal-kicker {
   margin: 0 0 0.5rem;
   display: inline-block;
@@ -317,6 +369,10 @@ button {
   border-radius: 14px;
 }
 
+.identity-form .cta-button {
+  width: max-content;
+}
+
 .center-modal-idle .cta-button:hover {
   transform: translateY(-1px);
   box-shadow:
@@ -335,6 +391,23 @@ button {
   background: var(--nb-cream);
   color: var(--nb-black);
   box-shadow: 5px 5px 0 var(--nb-black);
+}
+
+.save-status {
+  margin-top: 0.66rem;
+  font-size: 0.86rem;
+}
+
+.save-success {
+  color: #0a6e2d;
+}
+
+.save-error {
+  color: #ad0338;
+}
+
+.retry-button {
+  margin-top: 0.55rem;
 }
 
 .effects-layer {

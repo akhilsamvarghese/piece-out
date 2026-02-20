@@ -3,14 +3,23 @@ export default function UIOverlay({
   currentLevel,
   maxLevel,
   progress,
-  isMuted,
-  onStart,
+  participantName,
+  venueName,
+  venueOptions,
+  formErrors,
+  submissionState,
+  onParticipantNameChange,
+  onVenueNameChange,
+  onStartSubmit,
   onNext,
   onReplayLevel,
   onRestartAll,
-  onToggleMute,
+  onRetrySubmit,
   themeLabel
 }) {
+  const displayParticipantName = (participantName || '').trim() || 'Champ';
+  const displayVenueName = (venueName || '').trim() || 'your venue';
+
   return (
     <div className="ui-overlay">
       {status !== 'IDLE' && (
@@ -24,9 +33,6 @@ export default function UIOverlay({
             <span>{progress.snapped} / {progress.total || 0}</span>
           </div>
           <div className="hud-actions">
-            <button type="button" className="hud-button" onClick={onToggleMute}>
-              {isMuted ? 'UNMUTE' : 'MUTE'}
-            </button>
             <button type="button" className="hud-button" onClick={onRestartAll}>
               RESTART
             </button>
@@ -37,10 +43,62 @@ export default function UIOverlay({
       {status === 'IDLE' && (
         <div className="center-modal center-modal-idle">
           <h1>ENTER FLOW MODE</h1>
-          <p>Drag pieces into place and clear all 3 levels.</p>
-          <button type="button" className="cta-button" onClick={onStart}>
-            START RUN
-          </button>
+          <p>Add participant and venue details before starting the run.</p>
+          <form
+            className="identity-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onStartSubmit();
+            }}
+          >
+            <label className="identity-field">
+              Participant Name
+              <input
+                type="text"
+                className="identity-input"
+                value={participantName}
+                onChange={(event) => onParticipantNameChange(event.target.value)}
+                maxLength={120}
+                autoComplete="name"
+              />
+            </label>
+            {formErrors.participantName && (
+              <p className="field-error" role="alert">
+                {formErrors.participantName}
+              </p>
+            )}
+
+            <label className="identity-field">
+              Venue Name
+              <select
+                className="identity-input identity-select"
+                value={venueName}
+                onChange={(event) => onVenueNameChange(event.target.value)}
+              >
+                <option value="">Select a venue</option>
+                {venueOptions.map((venue) => (
+                  <option key={venue} value={venue}>
+                    {venue}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {formErrors.venueName && (
+              <p className="field-error" role="alert">
+                {formErrors.venueName}
+              </p>
+            )}
+
+            {formErrors.global && (
+              <p className="field-error" role="alert">
+                {formErrors.global}
+              </p>
+            )}
+
+            <button type="submit" className="cta-button">
+              START RUN
+            </button>
+          </form>
         </div>
       )}
 
@@ -62,11 +120,27 @@ export default function UIOverlay({
 
       {status === 'FINISHED' && (
         <div className="center-modal center-modal-finished">
-          <p className="modal-kicker">ALL LEVELS DONE</p>
-          <h2>FLOW SEQUENCE FINISHED</h2>
-          <p>You cleared the full demo stack. Run it again and beat your own pace.</p>
+          <p className="modal-kicker">MISSION COMPLETE</p>
+          <h2>NICE WORK, {displayParticipantName}!</h2>
+          <p>All levels cleared from {displayVenueName}.</p>
+          {submissionState.status === 'saving' && (
+            <p className="save-status">Saving your run...</p>
+          )}
+          {submissionState.status === 'success' && (
+            <p className="save-status save-success">Run saved successfully.</p>
+          )}
+          {submissionState.status === 'error' && (
+            <>
+              <p className="save-status save-error" role="alert">
+                {submissionState.errorMessage || 'Failed to save participant run.'}
+              </p>
+              <button type="button" className="ghost-button retry-button" onClick={onRetrySubmit}>
+                RETRY SAVE
+              </button>
+            </>
+          )}
           <button type="button" className="cta-button" onClick={onRestartAll}>
-            REPLAY ALL
+            PLAY AGAIN
           </button>
         </div>
       )}

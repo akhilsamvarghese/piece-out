@@ -1,22 +1,15 @@
 import { useEffect, useRef } from 'react';
 import PuzzleEngine from '../engine/PuzzleEngine';
-import { playSnapSound } from '../utils/audio';
 
 export default function PuzzleCanvas({
   levelConfig,
   imageBitmap,
-  isMuted,
   onLevelComplete,
   onProgress,
   runKey
 }) {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
-  const mutedRef = useRef(isMuted);
-
-  useEffect(() => {
-    mutedRef.current = isMuted;
-  }, [isMuted]);
 
   useEffect(() => {
     if (!canvasRef.current || !imageBitmap) {
@@ -28,10 +21,7 @@ export default function PuzzleCanvas({
       imageBitmap,
       levelConfig,
       onProgress,
-      onLevelComplete,
-      onSnap: () => {
-        playSnapSound({ muted: mutedRef.current });
-      }
+      onLevelComplete
     });
 
     engineRef.current = engine;
