@@ -2,14 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PuzzleCanvas from './components/PuzzleCanvas';
 import UIOverlay from './components/UIOverlay';
 import EffectsLayer from './components/EffectsLayer';
+import AdminLeaderboard from './components/AdminLeaderboard';
 import { LEVELS, getLevelConfig } from './engine/levels';
 import { generatePuzzleImage } from './utils/generatePuzzleImage';
 import monaLisaImage from './assets/monalisa_Medium.jpeg';
 import starryNightImage from './assets/starrynight.jpg';
 import tinkerSpaceImage from './assets/tinkerspace.jpeg';
 import thhLogo from './assets/icons/THH.png';
+import nyanCatGif from './assets/icons/nyan-cat.gif';
 import { isSupabaseConfigured } from './lib/supabaseClient';
 import { insertCompletedParticipantRun, validateParticipantIdentity } from './services/participantRuns';
+import { fetchAdminLeaderboard, signInAdminWithPassword } from './services/adminLeaderboard';
 import { VENUE_OPTIONS } from './data/venues';
 
 const INITIAL_STATE = {
@@ -27,9 +30,47 @@ const LEVEL_IMAGE_SOURCES = {
   2: starryNightImage,
   3: tinkerSpaceImage
 };
+const SESSION_STORAGE_KEY = 'pieceout_admin_session';
+const ADMIN_EMAIL = String(import.meta.env.VITE_ADMIN_EMAIL || '').trim().toLowerCase();
 
 function createSubmissionState(status = 'idle', errorMessage = '') {
   return { status, errorMessage };
+}
+
+function readStoredAdminSession() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const stored = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    if (!parsed?.accessToken || !parsed?.expiresAt) {
+      return null;
+    }
+    const nowUnix = Math.floor(Date.now() / 1000);
+    if (parsed.expiresAt <= nowUnix) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredAdminSession(session) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (!session) {
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    return;
+  }
+  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
 }
 
 function createRunId() {
@@ -58,6 +99,14 @@ export default function App() {
   const [formErrors, setFormErrors] = useState({});
   const [activeRunMeta, setActiveRunMeta] = useState(null);
   const [submissionState, setSubmissionState] = useState(() => createSubmissionState());
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminAuthState, setAdminAuthState] = useState(() => createSubmissionState());
+  const [adminSession, setAdminSession] = useState(() => readStoredAdminSession());
+  const [leaderboardState, setLeaderboardState] = useState({
+    status: 'idle',
+    errorMessage: '',
+    rows: []
+  });
 
   const [imageCache, setImageCache] = useState(() => new Map());
   const savedRunIdsRef = useRef(new Set());
@@ -319,8 +368,125 @@ export default function App() {
     void saveCompletedRun();
   }, [saveCompletedRun, submissionState.status]);
 
+  const handleCheatComplete = useCallback(() => {
+    if (gameState.status !== 'PLAYING' && gameState.status !== 'COMPLETED') {
+      return;
+    }
+
+    if (!activeRunMeta) {
+      return;
+    }
+
+    const finalLevel = LEVELS.length;
+    const finalLevelConfig = getLevelConfig(finalLevel);
+    const totalPieces = finalLevelConfig.rows * finalLevelConfig.cols;
+
+    setEffectKey((value) => value + 1);
+    setSubmissionState(createSubmissionState());
+    setGameState({
+      currentLevel: finalLevel,
+      status: 'FINISHED'
+    });
+    setProgress({ snapped: totalPieces, total: totalPieces });
+    setRunKey((value) => value + 1);
+  }, [activeRunMeta, gameState.status]);
+
   const showPuzzle =
     gameState.status === 'PLAYING' || gameState.status === 'COMPLETED' || gameState.status === 'FINISHED';
+  const isAdminPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const isSupabaseReady = isSupabaseConfigured();
+  const isAdminAuthenticated = Boolean(adminSession?.accessToken);
+
+  const loadLeaderboard = useCallback(async () => {
+    if (!adminSession?.accessToken) {
+      return;
+    }
+
+    setLeaderboardState((previous) => ({
+      ...previous,
+      status: 'loading',
+      errorMessage: ''
+    }));
+
+    try {
+      const rows = await fetchAdminLeaderboard({ accessToken: adminSession.accessToken });
+      setLeaderboardState({
+        status: 'success',
+        errorMessage: '',
+        rows
+      });
+    } catch (error) {
+      setLeaderboardState((previous) => ({
+        ...previous,
+        status: 'error',
+        errorMessage: error instanceof Error ? error.message : 'Failed to load leaderboard.'
+      }));
+    }
+  }, [adminSession]);
+
+  useEffect(() => {
+    if (!isAdminPage || !isAdminAuthenticated) {
+      return;
+    }
+    void loadLeaderboard();
+  }, [isAdminAuthenticated, isAdminPage, loadLeaderboard]);
+
+  const handleAdminSignIn = useCallback(async () => {
+    if (!isSupabaseReady) {
+      setAdminAuthState(createSubmissionState('error', 'Supabase is not configured.'));
+      return;
+    }
+
+    setAdminAuthState(createSubmissionState('loading'));
+
+    try {
+      const session = await signInAdminWithPassword({
+        adminEmail: ADMIN_EMAIL,
+        password: adminPasswordInput
+      });
+
+      if (ADMIN_EMAIL && String(session.userEmail || '').toLowerCase() !== ADMIN_EMAIL) {
+        throw new Error('This account is not allowed for admin access.');
+      }
+
+      setAdminSession(session);
+      writeStoredAdminSession(session);
+      setAdminPasswordInput('');
+      setAdminAuthState(createSubmissionState('success'));
+      setLeaderboardState((previous) => ({
+        ...previous,
+        status: 'loading',
+        errorMessage: ''
+      }));
+
+      try {
+        const rows = await fetchAdminLeaderboard({ accessToken: session.accessToken });
+        setLeaderboardState({
+          status: 'success',
+          errorMessage: '',
+          rows
+        });
+      } catch (loadError) {
+        setLeaderboardState({
+          status: 'error',
+          errorMessage: loadError instanceof Error ? loadError.message : 'Failed to load leaderboard.',
+          rows: []
+        });
+      }
+    } catch (error) {
+      setAdminAuthState(
+        createSubmissionState('error', error instanceof Error ? error.message : 'Admin login failed.')
+      );
+    }
+  }, [adminPasswordInput, isSupabaseReady]);
+
+  const handleAdminLogout = useCallback(() => {
+    setAdminSession(null);
+    writeStoredAdminSession(null);
+    setAdminPasswordInput('');
+    setAdminAuthState(createSubmissionState());
+    setLeaderboardState({ status: 'idle', errorMessage: '', rows: [] });
+  }, []);
 
   return (
     <div className="app-shell">
@@ -329,46 +495,65 @@ export default function App() {
         <p className="hero-subtitle">Drag, snap, and finish 3 quick levels.</p>
       </header>
 
-      <main className="game-frame">
-        <img src={thhLogo} alt="TinkHerHack logo" className="stage-logo" />
-        <section className="game-surface">
-          <p className="stage-label">
-            LEVEL {gameState.currentLevel} · {levelConfig.rows}×{levelConfig.cols}
-          </p>
+      {!isAdminPage ? (
+        <main className="game-frame">
+          <img src={thhLogo} alt="TinkHerHack logo" className="stage-logo" />
+          <img src={nyanCatGif} alt="Nyan cat" className="stage-nyan-cat" />
+          <section className="game-surface">
+            <p className="stage-label">
+              LEVEL {gameState.currentLevel} · {levelConfig.rows}×{levelConfig.cols}
+            </p>
 
-          {showPuzzle && currentImage ? (
-            <PuzzleCanvas
-              runKey={runKey}
-              levelConfig={levelConfig}
-              imageBitmap={currentImage}
-              onLevelComplete={handleLevelComplete}
-              onProgress={handleProgress}
+            {showPuzzle && currentImage ? (
+              <PuzzleCanvas
+                runKey={runKey}
+                levelConfig={levelConfig}
+                imageBitmap={currentImage}
+                onLevelComplete={handleLevelComplete}
+                onProgress={handleProgress}
+              />
+            ) : (
+              <div className="idle-stage" aria-hidden="true" />
+            )}
+
+            <UIOverlay
+              status={gameState.status}
+              currentLevel={gameState.currentLevel}
+              maxLevel={LEVELS.length}
+              progress={progress}
+              participantName={participantForm.participantName}
+              venueName={participantForm.venueName}
+              venueOptions={VENUE_OPTIONS}
+              formErrors={formErrors}
+              submissionState={submissionState}
+              onParticipantNameChange={handleParticipantNameChange}
+              onVenueNameChange={handleVenueNameChange}
+              onStartSubmit={handleStartSubmit}
+              onNext={handleNextLevel}
+              onReplayLevel={handleReplayLevel}
+              onRestartAll={handleRestartAll}
+              onRetrySubmit={handleRetrySave}
+              onCheatComplete={handleCheatComplete}
+              themeLabel="TOP PICK"
             />
-          ) : (
-            <div className="idle-stage" aria-hidden="true" />
-          )}
-
-          <UIOverlay
-            status={gameState.status}
-            currentLevel={gameState.currentLevel}
-            maxLevel={LEVELS.length}
-            progress={progress}
-            participantName={participantForm.participantName}
-            venueName={participantForm.venueName}
-            venueOptions={VENUE_OPTIONS}
-            formErrors={formErrors}
-            submissionState={submissionState}
-            onParticipantNameChange={handleParticipantNameChange}
-            onVenueNameChange={handleVenueNameChange}
-            onStartSubmit={handleStartSubmit}
-            onNext={handleNextLevel}
-            onReplayLevel={handleReplayLevel}
-            onRestartAll={handleRestartAll}
-            onRetrySubmit={handleRetrySave}
-            themeLabel="TOP PICK"
+          </section>
+        </main>
+      ) : (
+        <main className="admin-frame">
+          <AdminLeaderboard
+            adminEmail={ADMIN_EMAIL}
+            isSupabaseReady={isSupabaseReady}
+            isAuthenticated={isAdminAuthenticated}
+            passwordInput={adminPasswordInput}
+            authState={adminAuthState}
+            leaderboardState={leaderboardState}
+            onPasswordChange={setAdminPasswordInput}
+            onSignIn={handleAdminSignIn}
+            onRefresh={loadLeaderboard}
+            onLogout={handleAdminLogout}
           />
-        </section>
-      </main>
+        </main>
+      )}
 
       <EffectsLayer triggerKey={effectKey} />
     </div>

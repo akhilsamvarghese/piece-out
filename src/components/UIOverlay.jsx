@@ -15,6 +15,7 @@ export default function UIOverlay({
   onReplayLevel,
   onRestartAll,
   onRetrySubmit,
+  onCheatComplete,
   themeLabel
 }) {
   const displayParticipantName = (participantName || '').trim() || 'Champ';
@@ -33,6 +34,11 @@ export default function UIOverlay({
             <span>{progress.snapped} / {progress.total || 0}</span>
           </div>
           <div className="hud-actions">
+            {(status === 'PLAYING' || status === 'COMPLETED') && (
+              <button type="button" className="hud-button hud-button-cheat" onClick={onCheatComplete}>
+                CHEAT FINISH
+              </button>
+            )}
             <button type="button" className="hud-button" onClick={onRestartAll}>
               RESTART
             </button>

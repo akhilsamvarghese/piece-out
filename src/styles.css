@@ -83,6 +83,11 @@ button {
   margin: 0 auto;
 }
 
+.admin-frame {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+}
+
 .game-surface {
   position: relative;
   width: 100%;
@@ -109,6 +114,20 @@ button {
   pointer-events: none;
   transform: rotate(-9deg);
   transform-origin: top left;
+  filter: drop-shadow(4px 5px 0 rgba(7, 7, 7, 0.7));
+}
+
+.stage-nyan-cat {
+  position: absolute;
+  top: -130px;
+  right: -34px;
+  left: auto;
+  z-index: 6;
+  width: clamp(300px, 36vw, 470px);
+  height: auto;
+  pointer-events: none;
+  transform: rotate(0deg);
+  transform-origin: top right;
   filter: drop-shadow(4px 5px 0 rgba(7, 7, 7, 0.7));
 }
 
@@ -215,6 +234,11 @@ button {
   background: var(--nb-paper);
   color: var(--nb-black);
   box-shadow: 4px 4px 0 var(--nb-hot-pink);
+}
+
+.hud-button-cheat {
+  background: var(--nb-cyan);
+  box-shadow: 4px 4px 0 var(--nb-black);
 }
 
 .hud-button:hover,
@@ -416,6 +440,74 @@ button {
   pointer-events: none;
 }
 
+.admin-board {
+  border: 5px solid var(--nb-black);
+  background: linear-gradient(180deg, rgba(241, 241, 241, 0.97), rgba(238, 220, 150, 0.9));
+  box-shadow:
+    8px 8px 0 var(--nb-shadow-black),
+    14px 14px 0 var(--nb-shadow-pink);
+  padding: 1rem;
+}
+
+.admin-board-header h2 {
+  margin: 0;
+  font-family: 'Archivo Black', Impact, sans-serif;
+  font-size: clamp(1.8rem, 3.8vw, 2.5rem);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.admin-board-header p {
+  margin: 0.42rem 0 0.8rem;
+  font-weight: 700;
+}
+
+.admin-login {
+  display: grid;
+  gap: 0.56rem;
+  max-width: 420px;
+}
+
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-bottom: 0.82rem;
+}
+
+.admin-error {
+  margin: 0.32rem 0;
+  color: #ad0338;
+  font-weight: 700;
+}
+
+.leaderboard-table-wrap {
+  overflow-x: auto;
+  border: 3px solid var(--nb-black);
+  background: var(--nb-paper);
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  border-bottom: 2px solid rgba(7, 7, 7, 0.2);
+  padding: 0.58rem 0.65rem;
+  text-align: left;
+  font-size: 0.86rem;
+}
+
+.leaderboard-table th {
+  font-family: 'Archivo Black', Impact, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--nb-cream);
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;
@@ -465,6 +557,12 @@ button {
     width: clamp(98px, 28vw, 138px);
     top: -38px;
     left: -38px;
+  }
+
+  .stage-nyan-cat {
+    top: -105px;
+    right: -18px;
+    width: clamp(200px, 56vw, 320px);
   }
 
   .stage-label {

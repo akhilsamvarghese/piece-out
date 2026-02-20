@@ -24,6 +24,7 @@ grant usage on schema public to anon;
 grant insert on table public.participant_runs to anon;
 grant usage on schema public to authenticated;
 grant insert on table public.participant_runs to authenticated;
+grant select on table public.participant_runs to authenticated;
 
 drop policy if exists "anon_insert_participant_runs" on public.participant_runs;
 drop policy if exists "client_insert_participant_runs" on public.participant_runs;
@@ -32,3 +33,15 @@ create policy "client_insert_participant_runs"
   for insert
   to anon, authenticated
   with check (completed_on >= started_on);
+
+drop policy if exists "admin_select_participant_runs" on public.participant_runs;
+drop policy if exists "authenticated_select_participant_runs" on public.participant_runs;
+create policy "authenticated_select_participant_runs"
+  on public.participant_runs
+  for select
+  to authenticated
+  using (true);
+
+-- Keep this admin-only in practice by:
+-- 1) Creating exactly one Auth user (admin)
+-- 2) Disabling public signup in Supabase Auth settings

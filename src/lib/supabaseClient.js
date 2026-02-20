@@ -25,7 +25,7 @@ export function isSupabaseConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 }
 
-function getSupabaseConfig() {
+export function getSupabaseConfig() {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   }
